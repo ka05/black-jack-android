@@ -118,21 +118,28 @@ public class BlackJack extends ActionBarActivity {
             showConfirmMsg("You are already in a game, do you want to start a new one?");
         }
         else{
-            Log.d(test, "pre gameLaunch");
             //initialize a new game
             deck.clear(); // clears out the deck
-            resetImages();
-            resetLabels();
-
-            initDeck();
+            resetImages(); // resets imageviews
+            resetLabels(); // resets all labels
+            resetScore(); // resets dealer and player score
+            initDeck(); // initializes deck
 
             inGame = true;
             stay = false;
-            shuffle();
-            resetScore();
-            dealHands();
+            shuffle(); // shuffles deck
+            resetCardCount(); // resets card counts
+            dealHands(); // deal new hands
             endGameResultsTextView.setText("Hit or Stay?");
         }
+    }
+
+    public void dealNewHand(){
+        resetImages(); // resets imageviews
+        stay = false;
+
+        resetCardCount(); // resets card counts
+        dealHands(); // deal new hands
     }
 
     public Drawable getCardImg(String resName){
@@ -146,7 +153,6 @@ public class BlackJack extends ActionBarActivity {
 
     public void createGUICard(TableRow tr, String cardName){
         // creates an imageview and adds it to the passed in table
-
         // if back of card
         if(cardName == "b1fv"){
             ImageView imgView = new ImageView(this);
@@ -157,7 +163,6 @@ public class BlackJack extends ActionBarActivity {
             ImageView imgView = new ImageView(this);
             setCardImg(imgView, getCardImg(cardName));
             tr.addView(imgView);
-
         }
     }
 
@@ -182,11 +187,8 @@ public class BlackJack extends ActionBarActivity {
         playerHand.add(card4);
         createGUICard(playerCardTableRow, card4);
 
-        // update score for player
+        // update hand count in view for player
         updateHandCount(playerHandTextView, calcTotalCount(playerHand));
-        // update score for dealer
-        // probably shouldnt let player know what the dealers card count is right?
-//        updateHandCount(dealerHandTextView, calcTotalCount(dealerHand));
         dealerHandTextView.setText("Hand Count: ?");
     }
 
@@ -198,11 +200,11 @@ public class BlackJack extends ActionBarActivity {
 
         // grab new deck if deck count is below 10
         // it will be below 10 at this point since it has been decremented above
-        if(size == 10){
+        if(size < 10){
+            Log.d(test, "deck size < 10");
             deck.clear();
             initDeck();
         }
-
         return cardResName;
     }
 
@@ -218,7 +220,6 @@ public class BlackJack extends ActionBarActivity {
             String card = deal();
             playerHand.add(card);
             createGUICard(playerCardTableRow, card);
-
             updateHandCount(playerHandTextView, calcTotalCount(playerHand));
         }
     }
@@ -227,7 +228,6 @@ public class BlackJack extends ActionBarActivity {
         String card = deal();
         dealerHand.add(card);
         createGUICard(dealerCardTableRow, card);
-
         updateHandCount(dealerHandTextView, calcTotalCount(dealerHand));
     }
 
@@ -236,14 +236,21 @@ public class BlackJack extends ActionBarActivity {
         playerCardTableRow.removeAllViews();
     }
 
-    public void resetScore(){
+    public void resetCardCount(){
         playerHand.clear();
         dealerHand.clear();
+    }
+
+    public void resetScore(){
+        playerWins = 0;
+        dealerWins = 0;
     }
 
     public void resetLabels(){
         playerNameTextView.setText("Player");
         dealerNameTextView.setText("Dealer");
+        playerScoreTextView.setText("Score:");
+        dealerScoreTextView.setText("Score:");
     }
 
     public int calcTotalCount(ArrayList hand){
@@ -277,34 +284,17 @@ public class BlackJack extends ActionBarActivity {
                 intVal = Integer.parseInt(strVal);
                 break;
         }
-
-
         return intVal;
     }
-
 
     // change name to updateHandCount
     public void updateHandCount(TextView txtView, int total){
 
         // if ace exists and current score is above 21
-        // subtract 10 from hand score - must change value of ace to 1 somehow.
-
-
         if(total > 21){
             txtView.setText("Busted");
-            //inGame = false; // do i want to set inGame to false and start new game?
             // should i start new round automatically? or prompt them for new round
-
-            //reveal dealers other card
-            dealerCardTableRow.removeViewAt(1); //remove old
-            createGUICard(dealerCardTableRow, dealerHand.get(1)); // reveal other card
-
-            //set end game text to dealer won
-            endGameResultsTextView.setText("Dealer Won");
-
-            //end game
-            inGame = false;
-
+            stay();
         }else{
             if(total == 21){
                 txtView.setText("Hand Count: " + total);
@@ -319,10 +309,6 @@ public class BlackJack extends ActionBarActivity {
         dealerCardTableRow.removeViewAt(1); //remove old
         createGUICard(dealerCardTableRow, dealerHand.get(1)); // reveal other card
         updateHandCount(dealerHandTextView, calcTotalCount(dealerHand));
-        String currentTotal = calcTotalCount(dealerHand) + "";
-
-        Log.d(currentTotal, "CURRENT DEALER TOTAL");
-
 
         // need to figure out how to hide it by showing back of card
         if(calcTotalCount(dealerHand) <= 16){
@@ -347,36 +333,42 @@ public class BlackJack extends ActionBarActivity {
         }
     }
 
+
+    //When a game ends in a push (tie) or a win, an AlertDialog will pop up with the results (push or who wins).
+    // Two new hands will then be dealt after the dialog has been dismissed.
+
     public void finalGameCheck(){
-        Log.d(test, "finalGameCheck called");
         //check for push
         // if not push - who won
         //check values of both deck counts.
         if(calcTotalCount(dealerHand) == calcTotalCount(playerHand)){
-            Log.d(test, "PUSH");
             // we have a push
-            endGameResultsTextView.setText("Its a Push");
-            inGame = false;
+            endGameResultsTextView.setText("It's a Push");
+            showWinner("Its a push, nobody wins.");
         }
         else{
-            Log.d(test, "Its not a push");
             if(isNotBust(calcTotalCount(dealerHand)) > isNotBust(calcTotalCount(playerHand))){
-                Log.d(test, "DEALER WINS");
-                // dealer won
-                endGameResultsTextView.setText("Dealer Wins");
-                inGame = false;
-                // sets win count
-                dealerWins++;
-                dealerScoreTextView.setText("Score: " + dealerWins);
+                if(calcTotalCount(dealerHand) <= 21){
+                    // dealer won
+                    endGameResultsTextView.setText("Dealer Wins!");
+                    // sets win count
+                    dealerWins++;
+                    dealerScoreTextView.setText("Score: " + dealerWins);
+                    showWinner("Dealer Won");
+                }
+                else{
+                    // dealer busted
+                    endGameResultsTextView.setText("It's a Push!");
+                    showWinner("Its a push, nobody wins.");
+                }
             }
             else{
-                Log.d(test, "PLAYER WINS");
                 //player won
-                endGameResultsTextView.setText("Player Wins");
-                inGame = false;
+                endGameResultsTextView.setText("Player Wins!");
                 // sets win count
                 playerWins++;
                 playerScoreTextView.setText("Score: " + playerWins);
+                showWinner("Player Won!");
             }
         }
     }
@@ -517,6 +509,22 @@ public class BlackJack extends ActionBarActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         inGame = false;
                         newGame();
+                        return;
+                    }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    private void showWinner(String title) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage("Player Hand: "+ calcTotalCount(playerHand) + "\nDealer Hand: " + calcTotalCount(dealerHand) + "\n\nDeal Another?")
+                .setCancelable(true)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dealNewHand();
                         return;
                     }
                 });

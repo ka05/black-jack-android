@@ -321,7 +321,8 @@ public class BlackJack extends ActionBarActivity {
                 }else{
                     dealerHit();
 
-                    if(calcTotalCount(dealerHand) > 17){
+                    if(calcTotalCount(dealerHand) >= 17){
+                        Log.d(test, "DEALERS HAND** >= 17");
                         finalGameCheck();
                     }
                 }
@@ -341,34 +342,41 @@ public class BlackJack extends ActionBarActivity {
         //check for push
         // if not push - who won
         //check values of both deck counts.
-        if(calcTotalCount(dealerHand) == calcTotalCount(playerHand)){
+        if(calcTotalCount(dealerHand) == calcTotalCount(playerHand)&& calcTotalCount(dealerHand) > 21 && calcTotalCount(playerHand) > 21){
             // we have a push
             endGameResultsTextView.setText("It's a Push");
             showWinner("Its a push, nobody wins.");
         }
         else{
-            if(isNotBust(calcTotalCount(dealerHand)) > isNotBust(calcTotalCount(playerHand))){
-                if(calcTotalCount(dealerHand) <= 21){
-                    // dealer won
-                    endGameResultsTextView.setText("Dealer Wins!");
-                    // sets win count
-                    dealerWins++;
-                    dealerScoreTextView.setText("Score: " + dealerWins);
-                    showWinner("Dealer Won");
-                }
-                else{
-                    // dealer busted
-                    endGameResultsTextView.setText("It's a Push!");
-                    showWinner("Its a push, nobody wins.");
-                }
+            if(calcTotalCount(dealerHand) > 21 && calcTotalCount(playerHand) > 21){
+                //oth busted
+                endGameResultsTextView.setText("It's a Push");
+                showWinner("Its a push, nobody wins.");
             }
             else{
-                //player won
-                endGameResultsTextView.setText("Player Wins!");
-                // sets win count
-                playerWins++;
-                playerScoreTextView.setText("Score: " + playerWins);
-                showWinner("Player Won!");
+                if(isNotBust(calcTotalCount(dealerHand)) > isNotBust(calcTotalCount(playerHand))){
+                    if(calcTotalCount(dealerHand) <= 21){
+                        // dealer won
+                        endGameResultsTextView.setText("Dealer Wins!");
+                        // sets win count
+                        dealerWins++;
+                        dealerScoreTextView.setText("Score: " + dealerWins);
+                        showWinner("Dealer Won");
+                    }
+                    else{
+                        // dealer busted
+                        endGameResultsTextView.setText("It's a Push!");
+                        showWinner("Its a push, nobody wins.");
+                    }
+                }
+                else{
+                    //player won
+                    endGameResultsTextView.setText("Player Wins!");
+                    // sets win count
+                    playerWins++;
+                    playerScoreTextView.setText("Score: " + playerWins);
+                    showWinner("Player Won!");
+                }
             }
         }
     }

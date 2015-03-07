@@ -48,7 +48,7 @@ public class BlackJack extends ActionBarActivity {
 
     String test = "test: ";
     HashMap<String, Drawable> cardImages =  new HashMap<String,Drawable>();
-    ArrayList<String> deck = new ArrayList<String>(52);
+    ArrayList<String> deck;
     ArrayList<String> playerHand = new ArrayList<String>();
     ArrayList<String> dealerHand = new ArrayList<String>();
     int playerWins = 0;
@@ -138,8 +138,8 @@ public class BlackJack extends ActionBarActivity {
         }
         else{
             //initialize a new game
-            deck.clear(); // clears out the deck
-
+            initDeck(); // initializes deck
+            shuffle(); // shuffles deck
             handCount = 0; // reset hand count
             //clear out scrollViewTableView
             scrollViewTableLayout.removeAllViews();
@@ -147,10 +147,10 @@ public class BlackJack extends ActionBarActivity {
             resetScoreLabels(); // resets labels with player and dealer scores
             resetWinnerLabel(); // reset winner label
             createNewDealView(); // create new view for deal
-            initDeck(); // initializes deck
+
             inGame = true;
             stay = false;
-            shuffle(); // shuffles deck
+
             resetCardCount(); // resets card counts
             dealHands(); // deal new hands
             endGameResultsTextView.setText("Hit or Stay?");
@@ -176,14 +176,15 @@ public class BlackJack extends ActionBarActivity {
     }
 
     public void dealNewHand(){
+        resetWinnerLabel();
+
+        shuffle(); // shuffles deck
+        resetCardCount(); // resets card counts
         createNewDealView();
         //going to use layout inflator to create new dealview.xml in scrollview
 
         //resetImages(); // resets imageviews
-        resetWinnerLabel();
         stay = false;
-
-        resetCardCount(); // resets card counts
         dealHands(); // deal new hands
     }
 
@@ -247,21 +248,21 @@ public class BlackJack extends ActionBarActivity {
         // it will be below 10 at this point since it has been decremented above
         if(size < 10){
             Log.d(test, "deck size < 10");
-            deck.clear();
+            //deck.clear();
             initDeck();
         }
         return cardResName;
     }
 
     public void stay(){
-        if(!stay){
+        if(!stay && inGame){
             stay = true;
             dealerAITurn();
         }
     }
 
     public void hit(){
-        if(!stay && calcTotalCount(playerHand) < 21){
+        if(!stay && calcTotalCount(playerHand) < 21 && inGame){
             String card = deal();
             playerHand.add(card);
             createGUICard(playerCardTableRow, card);
@@ -271,6 +272,7 @@ public class BlackJack extends ActionBarActivity {
 
     public void dealerHit(){
         String card = deal();
+        Log.d(card, "post deal");
         dealerHand.add(card);
         createGUICard(dealerCardTableRow, card);
         updateHandCount(dealerHandTextView, calcTotalCount(dealerHand));
@@ -319,15 +321,39 @@ public class BlackJack extends ActionBarActivity {
     }
 
     public int calcTotalCount(ArrayList hand){
-        int sum = 0;
+        int sum = 0,
+            numAces = 0;
         for(int i = 0; i < hand.size(); i++){
             // need to add other scenario for if has ace (1 or 11)
             sum += getIntVal(hand.get(i));
+
+            if(getIntVal(hand.get(i)) == 11){
+                numAces++;
+            }
         }
-        if((hand.contains("ca") || hand.contains("da") || hand.contains("ha") || hand.contains("sa")) && sum > 21){
-            sum = sum - 10;
+        if(numAces > 0 && sum > 21){
+            for(int i = 0; i< numAces; i++){
+                sum = sum - 10;
+            }
         }
+//        if((hand.contains("ca") || hand.contains("da") || hand.contains("ha") || hand.contains("sa")) && sum > 21){
+//            sum = sum - 10;
+//        }
         return sum;
+    }
+
+    private int[] getCardTotals(ArrayList hand) {
+        int total1 = 0, total2 = 0;
+        for (String cardVal : (ArrayList<String>)hand) {
+            if (cardVal == "a") { // ace
+                total1 += getIntVal(cardVal);
+                total2 += 1;
+            }
+            total1 += getIntVal(cardVal);
+            total2 += getIntVal(cardVal);
+        }
+        if (total1 - total2 == 10) return new int[] {total1, total2};
+        return new int[] {total1, 0};
     }
 
     public int getIntVal(Object val){
@@ -352,7 +378,7 @@ public class BlackJack extends ActionBarActivity {
         return intVal;
     }
 
-    // change name to updateHandCount
+
     public void updateHandCount(TextView txtView, int total){
 
         // if ace exists and current score is above 21
@@ -377,23 +403,7 @@ public class BlackJack extends ActionBarActivity {
 
         // need to figure out how to hide it by showing back of card
         if(calcTotalCount(dealerHand) <= 16){
-            while(calcTotalCount(dealerHand) < 17){
-                Log.d(test, "DEALERS HAND** < 17");
-                if(calcTotalCount(dealerHand) >= 17){
-                    //stop
-                    Log.d(test, "DEALERS HAND** >= 17");
-                    finalGameCheck();
-                    break;
-                }else{
-                    dealerHit();
-
-                    if(calcTotalCount(dealerHand) >= 17){
-                        Log.d(test, "DEALERS HAND** >= 17");
-                        finalGameCheck();
-                        break;
-                    }
-                }
-            }
+            checkDealer();
         }
         else{
             Log.d(test, "dealer hand > 16");
@@ -401,6 +411,21 @@ public class BlackJack extends ActionBarActivity {
         }
     }
 
+    public void checkDealer(){
+        if(calcTotalCount(dealerHand) < 17){
+            Log.d(test, "DEALERS HAND < 17");
+            dealerHit();
+            checkDealer();
+            Log.d(test, "DEALERS HAND < 17");
+        }
+        else{
+            if(calcTotalCount(dealerHand) >= 17){
+                //stop
+                Log.d(test, "DEALERS HAND**FIRSTTIME >= 17");
+                finalGameCheck();
+            }
+        }
+    }
 
     //When a game ends in a push (tie) or a win, an AlertDialog will pop up with the results (push or who wins).
     // Two new hands will then be dealt after the dialog has been dismissed.
@@ -409,41 +434,51 @@ public class BlackJack extends ActionBarActivity {
         //check for push
         // if not push - who won
         //check values of both deck counts.
-        if(calcTotalCount(dealerHand) == calcTotalCount(playerHand)&& calcTotalCount(dealerHand) > 21 && calcTotalCount(playerHand) > 21){
+        if((calcTotalCount(dealerHand) == calcTotalCount(playerHand)) && busted(calcTotalCount(dealerHand)) && busted(calcTotalCount(playerHand)) ){
             // we have a push
+            Log.d(test, "TIE - BOTH BUSTED"); // GOT HERE ALREADY _THIS WORKS
             resultsTextView.setText("It's a Push");
             showWinner("Its a push, nobody wins.");
         }
         else{
-            if(calcTotalCount(dealerHand) > 21 && calcTotalCount(playerHand) > 21){
-                //oth busted
+            if(busted(calcTotalCount(dealerHand)) && busted(calcTotalCount(playerHand)) ){
+                //both busted
+                Log.d(test, "NOT A TIE - BOTH BUSTED");
                 resultsTextView.setText("It's a Push");
                 showWinner("Its a push, nobody wins.");
             }
             else{
-                if(isNotBust(calcTotalCount(dealerHand)) > isNotBust(calcTotalCount(playerHand))){
-                    if(calcTotalCount(dealerHand) <= 21){
-                        // dealer won
-                        resultsTextView.setText("Dealer Wins!");
-                        // sets win count
-                        dealerWins++;
-                        setDealerScoreTextView();
-
-                        showWinner("Dealer Won");
-                    }
-                    else{
-                        // dealer busted
-                        resultsTextView.setText("It's a Push!");
-                        showWinner("Its a push, nobody wins.");
-                    }
+                // its a tie and nobody busted
+                if(calcTotalCount(dealerHand) == calcTotalCount(playerHand)){
+                    Log.d(test, "ITS A TIE - NOBODY BUSTED"); // GOT IN HERE _THIS WOKRS
+                    resultsTextView.setText("It's a Push");
+                    showWinner("Its a push, nobody wins.");
                 }
-                else{
-                    //player won
-                    resultsTextView.setText("Player Wins!");
-                    // sets win count
-                    playerWins++;
-                    setPlayerScoreTextView();
-                    showWinner("Player Won!");
+                else {
+                    // dealer's hand is greater than players hand and both are not above 21
+                    if (isNotBust(calcTotalCount(dealerHand)) > isNotBust(calcTotalCount(playerHand))) {
+                        Log.d(test, "dealer's hand is greater than players hand and both are not above 21"); // GOT IN HERE THIS WOKRS
+                        if (calcTotalCount(dealerHand) <= 21) {
+                            // dealer won
+                            resultsTextView.setText("Dealer Wins!");
+                            // sets win count
+                            dealerWins++;
+                            setDealerScoreTextView();
+
+                            showWinner("Dealer Won");
+                        } else {
+                            // dealer busted
+                            resultsTextView.setText("It's a Push!");
+                            showWinner("Its a push, nobody wins.");
+                        }
+                    } else {
+                        //player won
+                        resultsTextView.setText("Player Wins!");
+                        // sets win count
+                        playerWins++;
+                        setPlayerScoreTextView();
+                        showWinner("Player Won!");
+                    }
                 }
             }
         }
@@ -454,6 +489,14 @@ public class BlackJack extends ActionBarActivity {
             return 0;
         }else{
             return val;
+        }
+    }
+
+    public boolean busted(int val){
+        if(val > 21){
+            return true;
+        }else{
+            return false;
         }
     }
 
@@ -520,6 +563,14 @@ public class BlackJack extends ActionBarActivity {
     }
 
     public void initDeck(){
+        // indicates the deck has already been initialized
+        if(inGame) {
+            if (deck.size() > 0) {
+                deck.clear();
+            }
+        }
+
+        deck = new ArrayList<String>(52);
         deck.add("ca");
         deck.add("c2");
         deck.add("c3");
@@ -595,8 +646,8 @@ public class BlackJack extends ActionBarActivity {
     private void showWinner(String title) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(title)
-                .setMessage("Player Hand: "+ calcTotalCount(playerHand) + "\nDealer Hand: " + calcTotalCount(dealerHand) + "\n\nDeal Another?")
-                .setCancelable(true)
+                .setMessage("Player Hand: " + calcTotalCount(playerHand) + "\nDealer Hand: " + calcTotalCount(dealerHand) + "\n\nDeal Another?")
+                .setCancelable(false)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {

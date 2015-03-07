@@ -1,14 +1,17 @@
 package com.example.clay.blackjack;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.app.Activity;
 import android.view.View;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -28,7 +31,10 @@ import org.w3c.dom.Text;
 
 public class BlackJack extends ActionBarActivity {
 
-    private TableLayout tableLayout;
+    private TableLayout scrollViewTableLayout;
+    private TableLayout scrollableTableLayout;
+    private TextView handNumTextView;
+    private TextView resultsTextView;
     private TextView dealerNameTextView;
     private TextView dealerScoreTextView;
     private TextView playerNameTextView;
@@ -38,6 +44,7 @@ public class BlackJack extends ActionBarActivity {
     private TextView dealerHandTextView;
     private TextView playerHandTextView;
     private TextView endGameResultsTextView;
+    private ScrollView scrollView;
 
     String test = "test: ";
     HashMap<String, Drawable> cardImages =  new HashMap<String,Drawable>();
@@ -50,24 +57,36 @@ public class BlackJack extends ActionBarActivity {
     boolean inGame = false; // determines if you are in game or not (used in alert)
     boolean stay = false;
 
+    int handCount = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_black_jack);
 
-        tableLayout = (TableLayout) findViewById(R.id.tableLayout);
+
+        scrollView = (ScrollView) findViewById(R.id.scrollView);
+        scrollViewTableLayout = (TableLayout) findViewById(R.id.scrollViewTableLayout);
         endGameResultsTextView = (TextView) findViewById(R.id.endGameResultsTextView);
-        dealerHandTextView = (TextView) findViewById(R.id.dealerHandTextView);
-        playerHandTextView = (TextView) findViewById(R.id.playerHandTextView);
-        dealerCardTableRow = (TableRow) findViewById(R.id.dealerCardTableRow);
-        playerCardTableRow = (TableRow) findViewById(R.id.playerCardTableRow);
-        dealerNameTextView = (TextView) findViewById(R.id.dealerNameTextView);
-        dealerScoreTextView = (TextView) findViewById(R.id.dealerScoreTextView);
-        playerNameTextView = (TextView) findViewById(R.id.playerNameTextView);
-        playerScoreTextView = (TextView) findViewById(R.id.playerScoreTextView);
+//        dealerHandTextView = (TextView) findViewById(R.id.dealerHandTextView);
+//        playerHandTextView = (TextView) findViewById(R.id.playerHandTextView);
+//        dealerCardTableRow = (TableRow) findViewById(R.id.dealerCardTableRow);
+//        playerCardTableRow = (TableRow) findViewById(R.id.playerCardTableRow);
+//        dealerNameTextView = (TextView) findViewById(R.id.dealerNameTextView);
+//        dealerScoreTextView = (TextView) findViewById(R.id.dealerScoreTextView);
+//        playerNameTextView = (TextView) findViewById(R.id.playerNameTextView);
+//        playerScoreTextView = (TextView) findViewById(R.id.playerScoreTextView);
+
+        dealerScoreTextView = (TextView)findViewById(R.id.dealerScoreTextView);
+        playerScoreTextView = (TextView)findViewById(R.id.playerScoreTextView);
+
         findViewById(R.id.hitButton).setOnClickListener(hitButtonListener);
         findViewById(R.id.stayButton).setOnClickListener(stayButtonListener);
         findViewById(R.id.newGameButton).setOnClickListener(newGameButtonListener);
+
+        setPlayerScoreTextView();
+        setDealerScoreTextView();
+
         initCardImages();
     }
 
@@ -120,11 +139,15 @@ public class BlackJack extends ActionBarActivity {
         else{
             //initialize a new game
             deck.clear(); // clears out the deck
-            resetImages(); // resets imageviews
-            resetLabels(); // resets all labels
-            resetScore(); // resets dealer and player score
-            initDeck(); // initializes deck
 
+            handCount = 0; // reset hand count
+            //clear out scrollViewTableView
+            scrollViewTableLayout.removeAllViews();
+            resetScore(); // resets dealer and player score
+            resetScoreLabels(); // resets labels with player and dealer scores
+            resetWinnerLabel(); // reset winner label
+            createNewDealView(); // create new view for deal
+            initDeck(); // initializes deck
             inGame = true;
             stay = false;
             shuffle(); // shuffles deck
@@ -134,8 +157,30 @@ public class BlackJack extends ActionBarActivity {
         }
     }
 
+    public void createNewDealView(){
+        LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dealView = inflater.inflate(R.layout.dealview, null);
+        scrollableTableLayout = (TableLayout) findViewById(R.id.scrollableTableLayout);
+        dealerHandTextView = (TextView) dealView.findViewById(R.id.dealerHandTextView);
+        playerHandTextView = (TextView) dealView.findViewById(R.id.playerHandTextView);
+        dealerCardTableRow = (TableRow) dealView.findViewById(R.id.dealerCardTableRow);
+        playerCardTableRow = (TableRow) dealView.findViewById(R.id.playerCardTableRow);
+        dealerNameTextView = (TextView) dealView.findViewById(R.id.dealerNameTextView);
+        playerNameTextView = (TextView) dealView.findViewById(R.id.playerNameTextView);
+        handNumTextView = (TextView) dealView.findViewById(R.id.handNumTextView);
+        resultsTextView = (TextView) dealView.findViewById(R.id.resultsTextView);
+        handCount++;
+        setHandNumTextView();
+        setResultsTextView();
+        scrollViewTableLayout.addView(dealView, 0);
+    }
+
     public void dealNewHand(){
-        resetImages(); // resets imageviews
+        createNewDealView();
+        //going to use layout inflator to create new dealview.xml in scrollview
+
+        //resetImages(); // resets imageviews
+        resetWinnerLabel();
         stay = false;
 
         resetCardCount(); // resets card counts
@@ -231,6 +276,19 @@ public class BlackJack extends ActionBarActivity {
         updateHandCount(dealerHandTextView, calcTotalCount(dealerHand));
     }
 
+    public void setPlayerScoreTextView(){
+        playerScoreTextView.setText(getResources().getString(R.string.playerScore, playerWins));
+    }
+    public void setDealerScoreTextView(){
+        dealerScoreTextView.setText(getResources().getString(R.string.dealerScore, dealerWins));
+    }
+    public void setHandNumTextView(){
+        handNumTextView.setText(getResources().getString(R.string.handNum, handCount));
+    }
+    public void setResultsTextView(){
+        resultsTextView.setText(getResources().getString(R.string.resultText, " "));
+    }
+
     public void resetImages(){
         dealerCardTableRow.removeAllViews();
         playerCardTableRow.removeAllViews();
@@ -246,11 +304,18 @@ public class BlackJack extends ActionBarActivity {
         dealerWins = 0;
     }
 
+    public void resetScoreLabels(){
+        setDealerScoreTextView();
+        setPlayerScoreTextView();
+    }
+
     public void resetLabels(){
-        playerNameTextView.setText("Player");
-        dealerNameTextView.setText("Dealer");
         playerScoreTextView.setText("Score:");
         dealerScoreTextView.setText("Score:");
+    }
+
+    public void resetWinnerLabel(){
+        endGameResultsTextView.setText("Hit or Stay?");
     }
 
     public int calcTotalCount(ArrayList hand){
@@ -318,12 +383,14 @@ public class BlackJack extends ActionBarActivity {
                     //stop
                     Log.d(test, "DEALERS HAND** >= 17");
                     finalGameCheck();
+                    break;
                 }else{
                     dealerHit();
 
                     if(calcTotalCount(dealerHand) >= 17){
                         Log.d(test, "DEALERS HAND** >= 17");
                         finalGameCheck();
+                        break;
                     }
                 }
             }
@@ -344,37 +411,38 @@ public class BlackJack extends ActionBarActivity {
         //check values of both deck counts.
         if(calcTotalCount(dealerHand) == calcTotalCount(playerHand)&& calcTotalCount(dealerHand) > 21 && calcTotalCount(playerHand) > 21){
             // we have a push
-            endGameResultsTextView.setText("It's a Push");
+            resultsTextView.setText("It's a Push");
             showWinner("Its a push, nobody wins.");
         }
         else{
             if(calcTotalCount(dealerHand) > 21 && calcTotalCount(playerHand) > 21){
                 //oth busted
-                endGameResultsTextView.setText("It's a Push");
+                resultsTextView.setText("It's a Push");
                 showWinner("Its a push, nobody wins.");
             }
             else{
                 if(isNotBust(calcTotalCount(dealerHand)) > isNotBust(calcTotalCount(playerHand))){
                     if(calcTotalCount(dealerHand) <= 21){
                         // dealer won
-                        endGameResultsTextView.setText("Dealer Wins!");
+                        resultsTextView.setText("Dealer Wins!");
                         // sets win count
                         dealerWins++;
-                        dealerScoreTextView.setText("Score: " + dealerWins);
+                        setDealerScoreTextView();
+
                         showWinner("Dealer Won");
                     }
                     else{
                         // dealer busted
-                        endGameResultsTextView.setText("It's a Push!");
+                        resultsTextView.setText("It's a Push!");
                         showWinner("Its a push, nobody wins.");
                     }
                 }
                 else{
                     //player won
-                    endGameResultsTextView.setText("Player Wins!");
+                    resultsTextView.setText("Player Wins!");
                     // sets win count
                     playerWins++;
-                    playerScoreTextView.setText("Score: " + playerWins);
+                    setPlayerScoreTextView();
                     showWinner("Player Won!");
                 }
             }

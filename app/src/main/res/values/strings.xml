@@ -3,4 +3,12 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="handNum">Hand: %1$d</string>
+    <string name="resultText">Result: %1$s</string>
+    <string name="dealerName">Dealer</string>
+    <string name="handCount">Hand Count: %1$d</string>
+    <string name="playerName">You</string>
+    <string name="newGameRequest">Tap New game to begin!</string>
+    <string name="playerScore">Player Score: %1$d</string>
+    <string name="dealerScore">Dealer Score: %1$d</string>
 </resources>

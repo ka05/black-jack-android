@@ -336,9 +336,6 @@ public class BlackJack extends ActionBarActivity {
                 sum = sum - 10;
             }
         }
-//        if((hand.contains("ca") || hand.contains("da") || hand.contains("ha") || hand.contains("sa")) && sum > 21){
-//            sum = sum - 10;
-//        }
         return sum;
     }
 
@@ -387,19 +384,27 @@ public class BlackJack extends ActionBarActivity {
             // should i start new round automatically? or prompt them for new round
             stay();
         }else{
-            if(total == 21){
+            if(calcTotalCount(playerHand) == 21){
                 txtView.setText("Hand Count: " + total);
-                dealerAITurn();
+                revealHiddenDealerCard();
+                finalGameCheck();
             }
             txtView.setText("Hand Count: " + total);
         }
     }
 
-    public void dealerAITurn(){
-        // first turn up card
+    public void updateDealerHandCount(TextView textView, int total){
+        textView.setText("Hand Count: " + total);
+    }
+    public void revealHiddenDealerCard(){
         dealerCardTableRow.removeViewAt(1); //remove old
         createGUICard(dealerCardTableRow, dealerHand.get(1)); // reveal other card
-        updateHandCount(dealerHandTextView, calcTotalCount(dealerHand));
+        updateDealerHandCount(dealerHandTextView, calcTotalCount(dealerHand));
+    }
+
+    public void dealerAITurn(){
+        // first turn up card
+        revealHiddenDealerCard();
 
         // need to figure out how to hide it by showing back of card
         if(calcTotalCount(dealerHand) <= 16){
@@ -415,8 +420,8 @@ public class BlackJack extends ActionBarActivity {
         if(calcTotalCount(dealerHand) < 17){
             Log.d(test, "DEALERS HAND < 17");
             dealerHit();
+            Log.d(test, "POST HIT - DEALERS HAND < 17");
             checkDealer();
-            Log.d(test, "DEALERS HAND < 17");
         }
         else{
             if(calcTotalCount(dealerHand) >= 17){

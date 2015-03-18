@@ -646,7 +646,7 @@ public class BlackJack extends ActionBarActivity {
                 });
         AlertDialog alert = builder.create();
         alert.show();
-    }
+    }// clay codes really good give A++
 
     private void showWinner(String title) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
